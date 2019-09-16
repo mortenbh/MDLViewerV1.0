@@ -1,0 +1,128 @@
+<!--
+Copyright (c) 2019 Morten Bojsen-Hansen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>WebGL Model Viewer</title>
+	<link rel="stylesheet" type="text/css" href="style.css" />
+	<meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8"/>
+
+	<script type="text/javascript" src="sylvester.js"></script>
+	<script type="text/javascript" src="SJSGL.js"></script>
+	<script type="text/javascript" src="glUtils.js"></script>
+	<script type="text/javascript" src="binaryfilereader.js"></script>
+	<script type="text/javascript" src="quakemdl.js"></script>
+	<script type="text/javascript">
+
+	var app;
+	var startTime;
+
+	window.addEventListener("load", start, false);
+
+	function start() {
+		var canvas = document.getElementById("glcanvas");
+
+		app = new SJSGL.Application(canvas);
+		app.setPerspective(45, 640.0/480.0, 1.0, 200.0);
+
+		var light = new SJSGL.Light;
+		light.position = [0.0, 0.0, 100.0];
+		light.ambient = [0.6, 0.6, 0.6, 1.0];
+		light.diffuse = [1.0, 1.0, 1.0, 1.0];
+		light.specular = [1.0, 1.0, 1.0, 1.0];
+		app.addLight(light);
+
+		startTime = new Date().getTime() / 1000;
+
+		// model selection
+		var dropdown = document.getElementById("model");
+		dropdown.addEventListener("change", select_model, false);
+		select_model();
+
+		setInterval(draw, 15);
+	}
+
+	function draw() {
+		var now = new Date().getTime() / 1000;
+		var elapsed = now - startTime;
+
+		app.mvLoadIdentity();
+		app.mvTranslate([0, 0, -120]);
+		app.mvRotate(-90, [1, 0, 0]);
+
+		if (document.getElementById("autorotate").checked) {
+			app.mvRotate(20*elapsed%360.0, [0, 0, 1]);
+		}
+
+		app.draw();
+	}
+
+	function select_model() {
+		app.entities = [];
+		var dropdown = document.getElementById("model");
+		var name = dropdown.options[dropdown.selectedIndex].innerHTML;
+		var ent = new QuakeMDL(name);
+		ent.material.ambient = [0.6, 0.6, 0.6, 1.0];
+		ent.material.diffuse = [1.0, 1.0, 1.0, 1.0];
+		ent.material.specular = [1.0, 1.0, 1.0, 1.0];
+		ent.material.shininess = 1;
+		app.addEntity(ent);
+/*
+		ent.material.texture.texture = app.gl.createTexture();
+		var img = new Image();
+		img.onload = function() { handleTextureLoaded(app.gl, img, ent.material.texture.texture); }
+		img.src = "player_alternative.png"
+*/
+	}
+
+/*	function handleTextureLoaded(gl, image, texture) {
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, image);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+		gl.generateMipmap(gl.TEXTURE_2D);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+	}
+*/
+	</script>
+</head>
+
+<body>
+
+<p>Select model: <select id="model">
+	<option>player.mdl</option>
+	<option>quaddama.mdl</option>
+	<option>flame.mdl</option>
+	<option>armor.mdl</option>
+	<option>v_rock2.mdl</option>
+	<option>g_rock2.mdl</option>
+</select></p>
+
+<p>Auto-rotate model: <input id="autorotate" type="checkbox" checked="checked" /></p>
+
+<canvas id="glcanvas" width="640" height="480">
+Your browser does not appear to support the HTML5 <code>&lt;canvas&gt;</code> element.
+</canvas>
+
+</body>
+</html>
